@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ROUTES } from '../../utils/constants';
 
@@ -44,6 +44,18 @@ const Header = () => {
                 {item.label}
               </Link>
             ))}
+            <Link
+              to={ROUTES.ADMIN}
+              className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                isActive(ROUTES.ADMIN)
+                  ? 'text-primary border-b-2 border-primary'
+                  : 'text-primary/70 hover:text-primary'
+              }`}
+              title="Admin Panel"
+            >
+              <Settings size={16} />
+              <span>Admin</span>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -80,6 +92,18 @@ const Header = () => {
                     {item.label}
                   </Link>
                 ))}
+                <Link
+                  to={ROUTES.ADMIN}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`flex items-center gap-2 text-base font-medium transition-colors ${
+                    isActive(ROUTES.ADMIN)
+                      ? 'text-primary border-l-4 border-primary pl-2'
+                      : 'text-primary/70 hover:text-primary pl-2'
+                  }`}
+                >
+                  <Settings size={18} />
+                  <span>Admin</span>
+                </Link>
               </div>
             </motion.div>
           )}

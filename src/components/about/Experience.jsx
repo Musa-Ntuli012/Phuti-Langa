@@ -1,23 +1,11 @@
 import { motion } from 'framer-motion';
 import { Briefcase } from 'lucide-react';
+import { useContent } from '../../context/ContentContext';
 import Card from '../common/Card';
 
 const Experience = () => {
-  const experiences = [
-    {
-      title: 'Legal Intern',
-      organization: 'Law Firm Name', // TODO: Replace with actual organization
-      period: '2023 - 2024', // TODO: Replace with actual dates
-      type: 'Internship',
-      description: 'Assisted with legal research, document preparation, and client consultations.',
-      achievements: [
-        'Conducted comprehensive legal research on commercial law cases',
-        'Prepared legal documents and briefs',
-        'Supported senior attorneys in client meetings',
-      ],
-    },
-    // Add more experience entries as needed
-  ];
+  const { content } = useContent();
+  const experiences = content.experience;
 
   return (
     <section className="mb-12">

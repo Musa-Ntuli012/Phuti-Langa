@@ -1,21 +1,12 @@
 import { motion } from 'framer-motion';
 import { Heart, BookOpen } from 'lucide-react';
+import { useContent } from '../../context/ContentContext';
 import Card from '../common/Card';
 
 const Interests = () => {
-  const professionalInterests = [
-    'Development Economics',
-    'Policy Analysis',
-    'Commercial Law',
-    'Legal Research',
-    // Add more interests as needed
-  ];
-
-  const personalInterests = [
-    'Reading',
-    'Writing',
-    // Add more hobbies as needed
-  ];
+  const { content } = useContent();
+  const professionalInterests = content.interests.professional;
+  const personalInterests = content.interests.personal;
 
   return (
     <section className="mb-12">

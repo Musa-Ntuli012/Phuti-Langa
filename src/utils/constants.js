@@ -13,6 +13,7 @@ export const ROUTES = {
   SHOWCASE: '/showcase',
   CV: '/cv',
   CONTACT: '/contact',
+  ADMIN: '/admin',
 };
 
 // Placeholder content - to be replaced with actual content

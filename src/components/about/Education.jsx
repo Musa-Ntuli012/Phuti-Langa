@@ -1,21 +1,11 @@
 import { motion } from 'framer-motion';
 import { GraduationCap } from 'lucide-react';
+import { useContent } from '../../context/ContentContext';
 import Card from '../common/Card';
 
 const Education = () => {
-  const education = [
-    {
-      degree: 'Bachelor of Commerce in Law (BCom Law)',
-      institution: 'University Name', // TODO: Replace with actual institution
-      period: '2020 - 2024', // TODO: Replace with actual dates
-      description: 'Focused on commercial law, legal principles, and business applications of law.',
-      achievements: [
-        'Dean\'s List',
-        'Relevant coursework in contract law, commercial law, and policy analysis',
-      ],
-    },
-    // Add more education entries as needed
-  ];
+  const { content } = useContent();
+  const education = content.education;
 
   return (
     <section className="mb-12">

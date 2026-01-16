@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { PLACEHOLDER_CONTENT } from '../../utils/constants';
+import { useContent } from '../../context/ContentContext';
 
 const Hero = () => {
   const [imageError, setImageError] = useState(false);
+  const { content } = useContent();
 
   return (
     <section className="min-h-screen flex items-center justify-center px-4 pt-20">
@@ -56,7 +57,7 @@ const Hero = () => {
               transition={{ duration: 0.6, delay: 0.6 }}
               className="text-base md:text-lg text-primary/70 max-w-2xl mb-8 leading-relaxed"
             >
-              {PLACEHOLDER_CONTENT.bio}
+              {content.bio.short}
             </motion.p>
           </motion.div>
         </div>

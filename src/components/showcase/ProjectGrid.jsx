@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useContent } from '../../context/ContentContext';
 import ProjectCard from './ProjectCard';
 
 const ProjectGrid = () => {
   const [activeFilter, setActiveFilter] = useState('All');
-
-  // Placeholder projects - to be replaced with actual content
-  const projects = [
-    // Add projects here when available
-  ];
+  const { content } = useContent();
+  const projects = content.projects;
 
   const categories = ['All', 'Academic Projects', 'Research', 'Writing Samples', 'Presentations', 'Certifications'];
 

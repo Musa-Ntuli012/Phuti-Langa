@@ -1,25 +1,12 @@
 import { motion } from 'framer-motion';
 import { Brain, Users } from 'lucide-react';
+import { useContent } from '../../context/ContentContext';
 import Card from '../common/Card';
 
 const Skills = () => {
-  const technicalSkills = [
-    { name: 'Legal Research & Analysis', level: 90 },
-    { name: 'Policy Development', level: 85 },
-    { name: 'Contract Law', level: 80 },
-    { name: 'Commercial Law', level: 75 },
-    // Add more skills as needed
-  ];
-
-  const softSkills = [
-    'Communication',
-    'Critical Thinking',
-    'Problem Solving',
-    'Analytical Reasoning',
-    'Team Collaboration',
-    'Time Management',
-    // Add more skills as needed
-  ];
+  const { content } = useContent();
+  const technicalSkills = content.skills.technical;
+  const softSkills = content.skills.soft;
 
   return (
     <section className="mb-12">

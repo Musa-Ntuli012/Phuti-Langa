@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Linkedin, MapPin, Phone } from 'lucide-react';
-import { CONTACT_INFO } from '../utils/constants';
+import { useContent } from '../context/ContentContext';
 import ContactCard from '../components/contact/ContactCard';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 
 const Contact = () => {
+  const { content } = useContent();
+  const CONTACT_INFO = content.contactInfo;
   const [formData, setFormData] = useState({
     name: '',
     email: '',

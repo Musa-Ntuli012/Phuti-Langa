@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { PLACEHOLDER_CONTENT } from '../utils/constants';
+import { useContent } from '../context/ContentContext';
 import Education from '../components/about/Education';
 import Skills from '../components/about/Skills';
 import Experience from '../components/about/Experience';
@@ -7,6 +7,7 @@ import Interests from '../components/about/Interests';
 import Card from '../components/common/Card';
 
 const About = () => {
+  const { content } = useContent();
   return (
     <div className="min-h-screen pt-20 px-4 py-12">
       <div className="container mx-auto max-w-5xl">
@@ -35,7 +36,7 @@ const About = () => {
               Professional Overview
             </h2>
             <p className="text-primary/70 leading-relaxed text-lg">
-              {PLACEHOLDER_CONTENT.fullBio}
+              {content.bio.full}
             </p>
           </Card>
         </motion.div>

@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Linkedin, Mail } from 'lucide-react';
-import { CONTACT_INFO, ROUTES } from '../../utils/constants';
+import { useContent } from '../../context/ContentContext';
+import { ROUTES } from '../../utils/constants';
 
 const Footer = () => {
+  const { content } = useContent();
+  const CONTACT_INFO = content.contactInfo;
   const currentYear = new Date().getFullYear();
 
   return (
