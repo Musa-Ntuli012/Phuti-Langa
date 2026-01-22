@@ -75,26 +75,102 @@ const getDefaultData = () => ({
 export const ContentProvider = ({ children }) => {
   const [content, setContent] = useState(getDefaultData);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Load data from localStorage on mount
-  useEffect(() => {
-    const savedData = localStorage.getItem('portfolioContent');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        setContent(parsed);
-      } catch (error) {
-        console.error('Error loading saved content:', error);
-      }
+  // API endpoint - will be /api/content in production
+  // In development, we'll use localStorage as fallback since serverless functions need Vercel dev
+  const getApiUrl = () => {
+    // Check if we're in production (Vercel sets this)
+    if (import.meta.env.PROD || window.location.hostname !== 'localhost') {
+      return '/api/content';
     }
-    setIsLoaded(true);
+    // In development, return null to use localStorage fallback
+    return null;
+  };
+
+  // Load data from API on mount (or localStorage in dev)
+  useEffect(() => {
+    const loadContent = async () => {
+      const apiUrl = getApiUrl();
+      
+      if (apiUrl) {
+        // Try to load from API in production
+        try {
+          const response = await fetch(apiUrl);
+          const result = await response.json();
+          
+          if (result.success && result.data) {
+            setContent(result.data);
+            setIsLoaded(true);
+            return;
+          }
+        } catch (error) {
+          console.error('Error loading content from API:', error);
+        }
+      }
+      
+      // Fallback to localStorage (works in both dev and as backup in prod)
+      const savedData = localStorage.getItem('portfolioContent');
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          setContent(parsed);
+        } catch (error) {
+          console.error('Error loading from localStorage:', error);
+        }
+      }
+      
+      setIsLoaded(true);
+    };
+
+    loadContent();
   }, []);
 
-  // Save data to localStorage whenever content changes
+  // Save data to API whenever content changes (or localStorage in dev)
   useEffect(() => {
-    if (isLoaded) {
+    if (!isLoaded) return; // Don't save on initial load
+
+    const saveContent = async () => {
+      setIsSaving(true);
+      const apiUrl = getApiUrl();
+      
+      // Always save to localStorage as backup
       localStorage.setItem('portfolioContent', JSON.stringify(content));
-    }
+      
+      if (apiUrl) {
+        // Try to save to API in production
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ data: content }),
+          });
+
+          const result = await response.json();
+          
+          if (result.success) {
+            console.log('Content saved successfully to server');
+          } else {
+            console.warn('Failed to save content to server:', result.error);
+            console.log('Content saved to localStorage as backup');
+          }
+        } catch (error) {
+          console.error('Error saving content to API:', error);
+          console.log('Content saved to localStorage as backup');
+        }
+      } else {
+        // In development, just use localStorage
+        console.log('Content saved to localStorage (development mode)');
+      }
+      
+      setIsSaving(false);
+    };
+
+    // Debounce saves to avoid too many API calls
+    const timeoutId = setTimeout(saveContent, 500);
+    return () => clearTimeout(timeoutId);
   }, [content, isLoaded]);
 
   const updateContactInfo = (data) => {
@@ -217,6 +293,7 @@ export const ContentProvider = ({ children }) => {
         deleteProject,
         resetToDefaults,
         isLoaded,
+        isSaving,
       }}
     >
       {children}

@@ -14,7 +14,7 @@ const Admin = () => {
   const [error, setError] = useState('');
   const [activeSection, setActiveSection] = useState('contact');
   const [editingIndex, setEditingIndex] = useState(null);
-  const { content, ...actions } = useContent();
+  const { content, isSaving, ...actions } = useContent();
 
   // Check if already authenticated
   useEffect(() => {
@@ -95,9 +95,17 @@ const Admin = () => {
           className="mb-8"
         >
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-4xl font-serif font-semibold text-primary">
-              Admin Dashboard
-            </h1>
+            <div>
+              <h1 className="text-4xl font-serif font-semibold text-primary">
+                Admin Dashboard
+              </h1>
+              {isSaving && (
+                <p className="text-sm text-primary/70 mt-1 flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+                  Saving changes...
+                </p>
+              )}
+            </div>
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
