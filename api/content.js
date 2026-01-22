@@ -4,13 +4,20 @@
 
 import { Redis } from '@upstash/redis';
 
-// Initialize Redis client (environment variables are set automatically by Vercel)
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
-});
-
 const CONTENT_KEY = 'portfolio_content';
+
+// Initialize Redis client only if environment variables are available
+let redis = null;
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  try {
+    redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+  } catch (error) {
+    console.error('Failed to initialize Redis client:', error);
+  }
+}
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -25,7 +32,7 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       // Load content from Redis
-      if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+      if (!redis) {
         return res.status(200).json({ success: true, data: null });
       }
       
@@ -54,7 +61,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: 'No data provided' });
       }
 
-      if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+      if (!redis) {
         return res.status(503).json({ 
           success: false, 
           error: 'Storage not configured. Please set up Upstash Redis from Vercel Marketplace. See VERCEL_SETUP.md for instructions.' 
