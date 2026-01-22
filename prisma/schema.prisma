@@ -1,0 +1,17 @@
+// Prisma schema for portfolio content storage
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model PortfolioContent {
+  id        String   @id @default("portfolio")
+  content   Json     // Stores the entire portfolio content as JSON
+  updatedAt DateTime @updatedAt
+
+  @@map("portfolio_content")
+}
