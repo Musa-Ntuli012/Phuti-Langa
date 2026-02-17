@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Lock, LogOut, Save, Plus, Trash2, Edit2, X } from 'lucide-react';
+import { Lock, LogOut, Save, Plus, Trash2, Edit2, X, Upload, FileText, Loader2, Mail, Eye } from 'lucide-react';
 import { useContent } from '../context/ContentContext';
 import Card from '../components/common/Card';
 
@@ -125,6 +125,8 @@ const Admin = () => {
               { id: 'skills', label: 'Skills' },
               { id: 'interests', label: 'Interests' },
               { id: 'projects', label: 'Projects' },
+              { id: 'cv', label: 'CV Upload' },
+              { id: 'messages', label: 'Messages' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -197,6 +199,15 @@ const Admin = () => {
               editingIndex={editingIndex}
               setEditingIndex={setEditingIndex}
             />
+          )}
+          {activeSection === 'cv' && (
+            <CVUploadSection
+              cv={content.cv}
+              onUpdate={actions.updateCV}
+            />
+          )}
+          {activeSection === 'messages' && (
+            <MessagesSection />
           )}
         </motion.div>
       </div>
@@ -1263,6 +1274,372 @@ const ProjectsSection = ({ projects, onAdd, onUpdate, onDelete, editingIndex, se
           </button>
         )}
       </form>
+    </Card>
+  );
+};
+
+// CV Upload Section Component
+const CVUploadSection = ({ cv, onUpdate }) => {
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [currentCV, setCurrentCV] = useState(cv);
+
+  useEffect(() => {
+    setCurrentCV(cv);
+  }, [cv]);
+
+  useEffect(() => {
+    const fetchCurrentCV = async () => {
+      try {
+        const response = await fetch('/api/upload-cv');
+        const result = await response.json();
+        if (result.success && result.data) {
+          const cvData = {
+            url: result.data.url,
+            filename: result.data.filename,
+            lastUpdated: new Date(result.data.uploadedAt).toLocaleDateString('en-ZA', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }),
+          };
+          setCurrentCV(cvData);
+          onUpdate(cvData);
+        }
+      } catch {
+        // Blob storage may not be configured yet
+      }
+    };
+    fetchCurrentCV();
+  }, []);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      setError('Only PDF files are allowed.');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be under 10MB.');
+      return;
+    }
+
+    setIsUploading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload-cv', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const cvData = {
+          url: result.url,
+          filename: result.filename,
+          lastUpdated: new Date().toLocaleDateString('en-ZA', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+        };
+        setCurrentCV(cvData);
+        onUpdate(cvData);
+        setSuccess(`CV uploaded successfully: ${result.filename}`);
+      } else {
+        setError(result.error || 'Upload failed. Please try again.');
+      }
+    } catch {
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete the current CV?')) return;
+
+    try {
+      const response = await fetch('/api/upload-cv', { method: 'DELETE' });
+      const result = await response.json();
+
+      if (result.success) {
+        const emptyCV = { url: '', filename: '', lastUpdated: '' };
+        setCurrentCV(emptyCV);
+        onUpdate(emptyCV);
+        setSuccess('CV deleted successfully.');
+        setError('');
+      }
+    } catch {
+      setError('Failed to delete CV.');
+    }
+  };
+
+  return (
+    <Card>
+      <h2 className="text-2xl font-serif font-semibold text-primary mb-6">CV Management</h2>
+
+      {/* Current CV Info */}
+      {currentCV?.url ? (
+        <div className="mb-6 p-4 border border-primary/20 rounded-lg bg-secondary/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FileText className="text-primary" size={24} />
+              <div>
+                <p className="font-medium text-primary">{currentCV.filename}</p>
+                <p className="text-sm text-primary/60">
+                  Uploaded: {currentCV.lastUpdated}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <a
+                href={currentCV.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-3 py-2 text-sm bg-primary text-accent rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <Eye size={16} />
+                View
+              </a>
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-1 px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <Trash2 size={16} />
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mb-6 p-6 border-2 border-dashed border-primary/20 rounded-lg text-center">
+          <FileText className="mx-auto text-primary/30 mb-2" size={40} />
+          <p className="text-primary/60">No CV uploaded yet</p>
+        </div>
+      )}
+
+      {/* Upload Area */}
+      <div className="space-y-4">
+        <label className="block">
+          <span className="block text-sm font-medium text-primary mb-2">
+            {currentCV?.url ? 'Replace CV' : 'Upload CV'} (PDF only, max 10MB)
+          </span>
+          <div className="relative">
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={handleFileUpload}
+              disabled={isUploading}
+              className="block w-full text-sm text-primary/70 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary file:text-accent hover:file:bg-primary/90 file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          </div>
+        </label>
+
+        {isUploading && (
+          <div className="flex items-center gap-2 text-primary/70">
+            <Loader2 size={18} className="animate-spin" />
+            <span>Uploading CV...</span>
+          </div>
+        )}
+
+        {error && (
+          <p className="text-red-600 text-sm flex items-center gap-1">
+            <X size={14} /> {error}
+          </p>
+        )}
+
+        {success && (
+          <p className="text-green-600 text-sm flex items-center gap-1">
+            <Upload size={14} /> {success}
+          </p>
+        )}
+      </div>
+
+      {/* Setup Instructions */}
+      <div className="mt-6 p-4 bg-secondary/20 rounded-lg">
+        <p className="text-sm text-primary/70">
+          <strong>Note:</strong> CV upload requires Vercel Blob Storage. Add{' '}
+          <code className="px-1 py-0.5 bg-primary/10 rounded text-xs">BLOB_READ_WRITE_TOKEN</code>{' '}
+          to your Vercel project environment variables. You can create a blob store in your Vercel dashboard
+          under Storage &rarr; Create Database &rarr; Blob.
+        </p>
+      </div>
+    </Card>
+  );
+};
+
+// Messages Section Component
+const MessagesSection = () => {
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [expandedId, setExpandedId] = useState(null);
+
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  const fetchMessages = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/contact');
+      const result = await response.json();
+      if (result.success) {
+        setMessages(result.data || []);
+      } else {
+        setError(result.error || 'Failed to load messages.');
+      }
+    } catch {
+      setError('Failed to load messages. The database may not be configured.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this message?')) return;
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setMessages(prev => prev.filter(msg => msg.id !== id));
+      }
+    } catch {
+      setError('Failed to delete message.');
+    }
+  };
+
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString('en-ZA', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  return (
+    <Card>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-serif font-semibold text-primary">
+          Contact Messages
+          {messages.length > 0 && (
+            <span className="ml-2 text-sm font-sans font-normal bg-primary text-accent px-2 py-0.5 rounded-full">
+              {messages.length}
+            </span>
+          )}
+        </h2>
+        <button
+          onClick={fetchMessages}
+          disabled={isLoading}
+          className="flex items-center gap-2 px-4 py-2 bg-secondary/50 text-primary rounded-lg hover:bg-secondary/70 transition-colors disabled:opacity-50"
+        >
+          {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
+          Refresh
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 size={32} className="animate-spin text-primary/40" />
+        </div>
+      ) : error ? (
+        <div className="text-center py-8">
+          <p className="text-red-600 mb-2">{error}</p>
+          <button
+            onClick={fetchMessages}
+            className="text-primary underline text-sm"
+          >
+            Try again
+          </button>
+        </div>
+      ) : messages.length === 0 ? (
+        <div className="text-center py-12">
+          <Mail className="mx-auto text-primary/30 mb-3" size={40} />
+          <p className="text-primary/60">No messages yet</p>
+          <p className="text-sm text-primary/40 mt-1">Messages from the contact form will appear here.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className="border border-primary/20 rounded-lg overflow-hidden"
+            >
+              <div
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary/10 transition-colors"
+                onClick={() => setExpandedId(expandedId === msg.id ? null : msg.id)}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold text-primary truncate">{msg.name}</h3>
+                    <span className="text-xs text-primary/50 flex-shrink-0">
+                      {formatDate(msg.createdAt)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-primary/70 truncate">{msg.subject}</p>
+                </div>
+                <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(msg.id);
+                    }}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {expandedId === msg.id && (
+                <div className="px-4 pb-4 border-t border-primary/10 pt-3">
+                  <div className="mb-2">
+                    <span className="text-xs font-medium text-primary/50">From:</span>{' '}
+                    <a href={`mailto:${msg.email}`} className="text-sm text-primary hover:underline">
+                      {msg.email}
+                    </a>
+                  </div>
+                  <div className="mb-2">
+                    <span className="text-xs font-medium text-primary/50">Subject:</span>{' '}
+                    <span className="text-sm text-primary">{msg.subject}</span>
+                  </div>
+                  <div className="mt-3 p-3 bg-secondary/10 rounded-lg">
+                    <p className="text-sm text-primary/80 whitespace-pre-wrap">{msg.message}</p>
+                  </div>
+                  <div className="mt-3">
+                    <a
+                      href={`mailto:${msg.email}?subject=Re: ${msg.subject}`}
+                      className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                    >
+                      <Mail size={14} />
+                      Reply via email
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </Card>
   );
 };

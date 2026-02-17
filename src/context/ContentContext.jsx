@@ -70,6 +70,11 @@ const getDefaultData = () => ({
     ],
   },
   projects: [],
+  cv: {
+    url: '',
+    filename: '',
+    lastUpdated: '',
+  },
 });
 
 export const ContentProvider = ({ children }) => {
@@ -270,6 +275,13 @@ export const ContentProvider = ({ children }) => {
     }));
   };
 
+  const updateCV = (data) => {
+    setContent(prev => ({
+      ...prev,
+      cv: { ...prev.cv, ...data },
+    }));
+  };
+
   const resetToDefaults = () => {
     setContent(getDefaultData());
   };
@@ -291,6 +303,7 @@ export const ContentProvider = ({ children }) => {
         addProject,
         updateProject,
         deleteProject,
+        updateCV,
         resetToDefaults,
         isLoaded,
         isSaving,

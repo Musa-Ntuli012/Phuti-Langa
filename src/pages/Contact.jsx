@@ -1,10 +1,26 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Mail, Linkedin, MapPin, Phone } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, Linkedin, MapPin, Phone, Send, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useContent } from '../context/ContentContext';
 import ContactCard from '../components/contact/ContactCard';
 import Card from '../components/common/Card';
-import Button from '../components/common/Button';
+
+const Toast = ({ message, type, onClose }) => (
+  <motion.div
+    initial={{ opacity: 0, y: -40 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -40 }}
+    className={`fixed top-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg border ${
+      type === 'success'
+        ? 'bg-green-50 border-green-200 text-green-800'
+        : 'bg-red-50 border-red-200 text-red-800'
+    }`}
+  >
+    {type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+    <span className="font-medium">{message}</span>
+    <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100">&times;</button>
+  </motion.div>
+);
 
 const Contact = () => {
   const { content } = useContent();
@@ -15,13 +31,38 @@ const Contact = () => {
     subject: '',
     message: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState(null);
 
-  const handleSubmit = (e) => {
+  const showToast = (message, type) => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 5000);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Implement form submission logic
-    console.log('Form submitted:', formData);
-    alert('Thank you for your message! I will get back to you soon.');
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        showToast('Message sent successfully! I will get back to you soon.', 'success');
+        setFormData({ name: '', email: '', subject: '', message: '' });
+      } else {
+        showToast(result.error || 'Failed to send message. Please try again.', 'error');
+      }
+    } catch {
+      showToast('Network error. Please check your connection and try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -59,6 +100,16 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen pt-20 px-4 py-12">
+      <AnimatePresence>
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+      </AnimatePresence>
+
       <div className="container mx-auto max-w-6xl">
         {/* Page Header */}
         <motion.div
@@ -121,7 +172,8 @@ const Contact = () => {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-secondary/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-accent text-primary"
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-3 border border-secondary/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-accent text-primary disabled:opacity-50"
                     placeholder="Your name"
                   />
                 </div>
@@ -136,7 +188,8 @@ const Contact = () => {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-secondary/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-accent text-primary"
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-3 border border-secondary/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-accent text-primary disabled:opacity-50"
                     placeholder="your.email@example.com"
                   />
                 </div>
@@ -152,7 +205,8 @@ const Contact = () => {
                   value={formData.subject}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-secondary/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-accent text-primary"
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-3 border border-secondary/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-accent text-primary disabled:opacity-50"
                   placeholder="What's this about?"
                 />
               </div>
@@ -166,15 +220,30 @@ const Contact = () => {
                   value={formData.message}
                   onChange={handleChange}
                   required
+                  disabled={isSubmitting}
                   rows={6}
-                  className="w-full px-4 py-3 border border-secondary/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-accent text-primary resize-none"
+                  className="w-full px-4 py-3 border border-secondary/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-accent text-primary resize-none disabled:opacity-50"
                   placeholder="Your message here..."
                 />
               </div>
               <div className="flex justify-end">
-                <Button type="submit" variant="primary" size="lg">
-                  Send Message
-                </Button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-2 px-8 py-4 text-lg font-medium bg-primary text-accent rounded-lg hover:bg-primary/90 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={20} className="animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={20} />
+                      Send Message
+                    </>
+                  )}
+                </button>
               </div>
             </form>
           </Card>
